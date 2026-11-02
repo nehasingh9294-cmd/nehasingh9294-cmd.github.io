@@ -1,47 +1,134 @@
 
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Joining Day Tracker</title>
+<title>HR Joining Dashboard</title>
 <style>
-body{font-family:Arial;background:#f2f5f9;padding:18px;color:#222}
-h1{color:#24527a}
-.card{background:white;padding:16px;margin:14px 0;border-radius:12px}
-button{background:#24527a;color:white;padding:10px;border:0;border-radius:6px}
-label{display:block;padding:9px}
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5fa;color:#243247;font-family:Arial,sans-serif}
+header{background:#183b60;color:white;padding:25px 18px}
+header h1{margin:0 0 8px;font-size:25px}
+header p{margin:0;color:#dce8f5}
+main{max-width:900px;margin:auto;padding:18px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{background:white;padding:17px;border-radius:12px;margin:13px 0;box-shadow:0 2px 8px #172b4d12}
+.stat strong{display:block;font-size:27px;color:#245d91;margin-top:8px}
+h2{font-size:18px}
+input{padding:11px;border:1px solid #ccd4df;border-radius:7px;width:100%;margin:5px 0 12px}
+button{background:#245d91;color:white;border:0;padding:11px 15px;border-radius:7px;cursor:pointer}
+.remove{background:#a33}
+.task{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #eee}
+.task input{width:auto;margin:0}
+.progress{height:9px;background:#e5eaf0;border-radius:10px;overflow:hidden}
+.fill{height:100%;background:#27865a}
+.muted{color:#718096;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<h1>HR Joining-Day Tracker</h1>
-<p>Fictional sample records for HR practice.</p>
-<div class="card">
-<h3>Add a joiner</h3>
-<input id="person" placeholder="Joiner name"><br><br>
-<input id="role" placeholder="Job role"><br><br>
-<button onclick="add()">Add joiner</button>
+<header>
+<h1>HR Joining Dashboard</h1>
+<p>Talent Acquisition | New Joiner Onboarding</p>
+</header>
+<main>
+<p class="muted">Demo project • All employee records below are fictional</p>
+
+<div class="stats">
+<div class="card stat">Total joiners<strong id="total">0</strong></div>
+<div class="card stat">Completed tasks<strong id="completed">0</strong></div>
 </div>
-<div id="list"></div>
+
+<div class="card">
+<h2>Add a new joiner</h2>
+<input id="name" placeholder="Fictional employee name">
+<div class="grid">
+<input id="role" placeholder="Job role">
+<input id="date" type="date">
+</div>
+<button onclick="addPerson()">Add joiner</button>
+</div>
+
+<h2>Joining checklist</h2>
+<div id="people"></div>
+</main>
+
 <script>
-let tasks=["Offer accepted","BGV completed","Documents received","Laptop ready","System access ready","Buddy assigned","Induction scheduled"];
-let people=[
-{name:"Aarav Mehta",role:"Java Developer"},
-{name:"Mira Shah",role:"React Developer"},
-{name:"Kabir Rao",role:"QA Engineer"}
+const tasks=[
+"Offer accepted",
+"Background verification completed",
+"Documents received",
+"Laptop allocated",
+"System access provided",
+"Buddy assigned",
+"Induction scheduled"
 ];
-function add(){
-let n=document.getElementById("person").value;
-let r=document.getElementById("role").value;
-if(!n||!r){alert("Enter name and role");return}
-people.push({name:n,role:r});
+
+let people=[
+{name:"Aarav Mehta",role:"Java Developer",date:"2026-11-09",done:[true,true,false,false,false,true,false],owners:["TA","HR","HR","IT","IT","Manager","HR"]},
+{name:"Mira Shah",role:"React Developer",date:"2026-11-16",done:[true,true,true,true,false,true,false],owners:["TA","HR","HR","IT","IT","Manager","HR"]},
+{name:"Kabir Rao",role:"QA Engineer",date:"2026-11-23",done:[true,false,false,false,false,false,false],owners:["TA","HR","HR","IT","IT","Manager","HR"]}
+];
+
+try{
+const saved=localStorage.getItem("hrJoiners");
+if(saved) people=JSON.parse(saved);
+}catch(e){}
+
+function save(){
+try{localStorage.setItem("hrJoiners",JSON.stringify(people));}
+catch(e){alert("Browser storage is unavailable. Your changes may not be saved.");}
 render();
 }
+
+function addPerson(){
+const name=document.getElementById("name").value.trim();
+const role=document.getElementById("role").value.trim();
+const date=document.getElementById("date").value;
+if(!name||!role||!date){alert("Please enter name, role and joining date.");return;}
+people.push({name,role,date,done:tasks.map(()=>false),owners:tasks.map(()=>"")});
+document.getElementById("name").value="";
+document.getElementById("role").value="";
+document.getElementById("date").value="";
+save();
+}
+
+function safe(s){
+return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function toggle(i,j,v){people[i].done[j]=v;save();}
+function owner(i,j,v){people[i].owners[j]=v;save();}
+function removePerson(i){
+if(confirm("Remove this joiner?")){people.splice(i,1);save();}
+}
+
 function render(){
-document.getElementById("list").innerHTML=people.map((p,i)=>`
-<div class="card">
-<h3>${p.name}</h3><p>${p.role}</p>
-${tasks.map(t=>`<label><input type="checkbox"> ${t}</label>`).join("")}
-</div>`).join("");
+document.getElementById("total").textContent=people.length;
+document.getElementById("completed").textContent=people.reduce((a,p)=>a+p.done.filter(Boolean).length,0);
+
+document.getElementById("people").innerHTML=people.map((p,i)=>{
+const count=p.done.filter(Boolean).length;
+const pct=Math.round(count/tasks.length*100);
+return `<div class="card">
+<h2>${safe(p.name)}</h2>
+<p>${safe(p.role)}</p>
+<p class="muted">Joining date: ${safe(p.date)}</p>
+<p><b>${pct}% complete</b> · ${count}/${tasks.length} tasks</p>
+<div class="progress"><div class="fill" style="width:${pct}%"></div></div>
+${tasks.map((t,j)=>`<div class="task">
+<input type="checkbox" ${p.done[j]?"checked":""} onchange="toggle(${i},${j},this.checked)">
+<div style="flex:1">
+<b>${t}</b><br>
+<span class="muted">Owner: ${safe(p.owners[j]||"Not assigned")}</span>
+</div>
+</div>`).join("")}
+<button class="remove" style="margin-top:14px" onclick="removePerson(${i})">Remove joiner</button>
+</div>`;
+}).join("")||"<div class='card'>No joiners added yet.</div>";
 }
 render();
 </script>
